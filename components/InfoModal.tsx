@@ -32,12 +32,12 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
       aria-labelledby="info-modal-title"
     >
       <div
-        className="bg-slate-800 p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-2xl relative border border-slate-700 animate-fadeInUp max-h-[90vh] overflow-y-auto"
+        className="bg-slate-800 p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-2xl relative border border-slate-700 animate-scaleIn max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-full transition-colors"
+          className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-full transition-smooth"
           aria-label="Close info modal"
         >
           <X size={24} />
@@ -144,7 +144,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         <div className="flex justify-center mt-6">
           <button
             onClick={onClose}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-pink-500 transition duration-150 ease-in-out transform hover:scale-105"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-pink-500 transition-smooth"
           >
             Start Learning!
           </button>

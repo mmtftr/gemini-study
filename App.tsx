@@ -28,7 +28,20 @@ import {
 } from "./services/geminiService"; // Added generateCourseContent
 import { GameState, GeminiModel } from "./types";
 
+// Declare global window property for View Transitions API helper
+declare global {
+  interface Window {
+    viewTransition: (callback: () => void) => void;
+  }
+}
+
+
+const storedApiKey = localStorage.getItem("gemini_api_key");
+const storedModel = localStorage.getItem("default_model") as GeminiModel;
+const infoModalShown = localStorage.getItem("info_modal_shown");
+
 const App: React.FC = () => {
+
   const [gameState, setGameState] = useState<GameState>(GameState.LOADING);
   const [previousGameState, setPreviousGameState] = useState<GameState>(
     GameState.COURSE_LIST
@@ -37,10 +50,10 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] =
     useState<string>("Loading app...");
   const [selectedModel, setSelectedModel] = useState<GeminiModel>(
-    GeminiModel.FLASH
+    storedModel || GeminiModel.FLASH
   );
   const [numQuestions, setNumQuestions] = useState<number>(5);
-  const [hasApiKey, setHasApiKey] = useState<boolean>(false); // Added
+  const [hasApiKey, setHasApiKey] = useState<boolean>(!!storedApiKey); // Added
   const [showApiKeySettings, setShowApiKeySettings] = useState<boolean>(false); // Added
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false); // Added
 
@@ -96,6 +109,13 @@ const App: React.FC = () => {
       !!modalConfig?.isOpen || showApiKeySettings || showInfoModal,
   });
 
+  // Enhanced state transition with View Transitions API
+  const handleStateTransition = useCallback((newState: GameState) => {
+    window.viewTransition(() => {
+      setGameState(newState);
+    });
+  }, []);
+
   // API Key management
   const handleApiKeyProvided = useCallback(
     (apiKey: string, model: GeminiModel) => {
@@ -117,8 +137,8 @@ const App: React.FC = () => {
     localStorage.removeItem("default_model");
     localStorage.removeItem("info_modal_shown");
     // Reset to course list when API key is cleared
-    setGameState(GameState.COURSE_LIST);
-  }, []);
+    handleStateTransition(GameState.COURSE_LIST);
+  }, [handleStateTransition]);
 
   // Course generation with AI
   const handleGenerateCourse = useCallback(
@@ -144,7 +164,7 @@ const App: React.FC = () => {
         if (newCourse) {
           courseHook.setCurrentCourse(newCourse);
           await courseHook.loadCourseDetails(newCourse);
-          setGameState(GameState.COURSE_DETAIL);
+          handleStateTransition(GameState.COURSE_DETAIL);
 
           // Refresh the course list
           const allCourses = await db.getAllCourses();
@@ -160,15 +180,11 @@ const App: React.FC = () => {
       }
       setLoadingMessage("");
     },
-    [courseHook, setLoadingMessage, setError, setGameState]
+    [courseHook, setLoadingMessage, setError, handleStateTransition]
   );
 
   // Check for stored API key and show info modal on first load
   useEffect(() => {
-    const storedApiKey = localStorage.getItem("gemini_api_key");
-    const storedModel = localStorage.getItem("default_model") as GeminiModel;
-    const infoModalShown = localStorage.getItem("info_modal_shown");
-
     if (storedApiKey) {
       setApiKey(storedApiKey);
       setHasApiKey(true);
@@ -196,12 +212,12 @@ const App: React.FC = () => {
       try {
         const fetchedCourses = await db.getAllCourses();
         courseHook.setInitialCourses(fetchedCourses);
-        setGameState(GameState.COURSE_LIST);
+        handleStateTransition(GameState.COURSE_LIST);
         setError(null);
       } catch (err) {
         console.error("Failed to load initial data:", err);
         setError("Could not load app data. Please try refreshing.");
-        setGameState(GameState.SETUP);
+        handleStateTransition(GameState.SETUP);
       }
       setLoadingMessage("");
     };
@@ -286,8 +302,8 @@ const App: React.FC = () => {
   // Show API key settings modal
   if (showApiKeySettings) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="w-full max-w-md bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 animate-fadeIn">
+        <div className="w-full max-w-md bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 animate-scaleIn">
           <h2 className="text-2xl font-bold text-sky-300 mb-4">
             API Key Settings
           </h2>
@@ -301,13 +317,13 @@ const App: React.FC = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowApiKeySettings(false)}
-                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition-smooth"
               >
                 Cancel
               </button>
               <button
                 onClick={handleClearApiKey}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-smooth"
               >
                 Clear & Reset
               </button>
@@ -346,7 +362,7 @@ const App: React.FC = () => {
     switch (gameState) {
       case GameState.COURSE_LIST:
         return (
-          <>
+          <div className="page-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <CourseList
               courses={courseHook.courses}
@@ -354,7 +370,7 @@ const App: React.FC = () => {
               onSelectCourse={courseHook.handleSelectCourse}
               onSetupNewQuiz={() => {
                 quizHook.resetQuizState();
-                setGameState(GameState.SETUP);
+                handleStateTransition(GameState.SETUP);
               }}
               onEditCourseName={courseHook.handleUpdateCourseName}
               onDeleteCourse={courseHook.handleDeleteCourseRequest}
@@ -363,12 +379,12 @@ const App: React.FC = () => {
                 !!loadingMessage && gameState === GameState.COURSE_LIST
               }
             />
-          </>
+          </div>
         );
       case GameState.COURSE_DETAIL:
         if (courseHook.currentCourse) {
           return (
-            <>
+            <div className="page-content">
               {shouldShowPersistentError && <ErrorMessage message={error} />}
               <CourseDetail
                 course={courseHook.currentCourse}
@@ -407,7 +423,7 @@ const App: React.FC = () => {
                   !!loadingMessage && gameState === GameState.COURSE_DETAIL
                 }
               />
-            </>
+            </div>
           );
         }
         navigateToCourseListWithResets();
@@ -416,25 +432,25 @@ const App: React.FC = () => {
       case GameState.QUIZ_HISTORY_DETAIL:
         if (courseHook.viewingQuizAttempt) {
           return (
-            <>
+            <div className="page-content">
               {shouldShowPersistentError && <ErrorMessage message={error} />}
               <QuizHistoryDetail
                 attempt={courseHook.viewingQuizAttempt}
                 onBack={() => {
                   courseHook.setViewingQuizAttempt(null);
-                  setGameState(GameState.COURSE_DETAIL);
+                  handleStateTransition(GameState.COURSE_DETAIL);
                 }}
                 onRetakeQuiz={quizHook.handleRetakeQuiz}
               />
-            </>
+            </div>
           );
         }
-        setGameState(GameState.COURSE_DETAIL);
+        handleStateTransition(GameState.COURSE_DETAIL);
         return <LoadingIndicator message="Loading attempt details..." />;
 
       case GameState.SETUP:
         return (
-          <>
+          <div className="page-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <QuizSetupForm
               onGenerateQuiz={quizHook.handleQuizGeneration}
@@ -443,7 +459,7 @@ const App: React.FC = () => {
               onModelChange={setSelectedModel}
               onNavigateToCourses={navigateToCourseListWithResets}
             />
-          </>
+          </div>
         );
       case GameState.GENERATING_QUIZ:
         return (
@@ -454,8 +470,6 @@ const App: React.FC = () => {
       case GameState.SHOW_ANSWER:
         // Primary loader: if the *current question data* isn't available.
         if (!currentQFromDisplay) {
-          // Fix for line 209: Removed redundant `gameState !== GameState.GENERATING_QUIZ`
-          // as gameState is already PLAYING or SHOW_ANSWER here.
           if (
             quizHook.isQuizGenerationComplete &&
             quizHook.displayedQuestions.length === 0
@@ -465,7 +479,7 @@ const App: React.FC = () => {
               ? GameState.COURSE_DETAIL
               : GameState.SETUP;
             return (
-              <>
+              <div className="page-content">
                 <ErrorMessage
                   message={
                     error ||
@@ -473,15 +487,13 @@ const App: React.FC = () => {
                   }
                 />
                 <button
-                  onClick={() => setGameState(fallbackState)}
-                  className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg"
+                  onClick={() => handleStateTransition(fallbackState)}
+                  className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-smooth"
                 >
                   Back
                 </button>
-              </>
+              </div>
             );
-            // Fix for line 219: Changed `else if (gameState !== GameState.GENERATING_QUIZ)` to `else`
-            // as `gameState !== GameState.GENERATING_QUIZ` is always true here.
           } else {
             return (
               <LoadingIndicator
@@ -496,12 +508,8 @@ const App: React.FC = () => {
           }
         }
 
-        // At this point, currentQFromDisplay MUST be available.
-        // The `if (currentQFromDisplay)` check is implicitly true.
-        // The original code block from lines 248-253 related to a fallback loader if currentQFromDisplay was null
-        // is unreachable due to the exhaustive checks above and has been removed (this addresses error for original line 250).
         return (
-          <>
+          <div className="page-content">
             {error &&
               (gameState === GameState.PLAYING ||
                 gameState === GameState.SHOW_ANSWER) &&
@@ -523,10 +531,10 @@ const App: React.FC = () => {
               onToggleHint={quizHook.toggleHint}
               onStartChat={quizHook.handleStartChat}
               isQuizGenerationComplete={quizHook.isQuizGenerationComplete}
-              isWaitingForNextStreamedQuestion={quizPlayerIsWaitingForNext} // Use the new flag
+              isWaitingForNextStreamedQuestion={quizPlayerIsWaitingForNext}
               onExitQuizRequest={quizHook.handleExitQuizRequest}
             />
-          </>
+          </div>
         );
 
       case GameState.SUMMARIZING_RESULTS:
@@ -553,7 +561,7 @@ const App: React.FC = () => {
         );
       case GameState.RESULTS:
         return (
-          <>
+          <div className="page-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <QuizResults
               score={quizHook.score}
@@ -574,7 +582,7 @@ const App: React.FC = () => {
                 quizHook.generatedQuizData.questions.length > 0
               }
             />
-          </>
+          </div>
         );
       case GameState.CHATTING_QUESTION:
         if (currentQFromDisplay) {
@@ -582,18 +590,20 @@ const App: React.FC = () => {
             (ua) => ua.questionText === currentQFromDisplay.question
           );
           return (
-            <QuestionChat
-              question={currentQFromDisplay}
-              onBackToQuiz={() => quizHook.handleEndChat(previousGameState)}
-              modelName={selectedModel}
-              userSelectedAnswerText={userAnswerForChat?.selectedAnswerText}
-              isUserAnswerCorrect={userAnswerForChat?.isCorrect}
-              correctAnswerText={userAnswerForChat?.correctAnswerText}
-            />
+            <div className="page-content">
+              <QuestionChat
+                question={currentQFromDisplay}
+                onBackToQuiz={() => quizHook.handleEndChat(previousGameState)}
+                modelName={selectedModel}
+                userSelectedAnswerText={userAnswerForChat?.selectedAnswerText}
+                isUserAnswerCorrect={userAnswerForChat?.isCorrect}
+                correctAnswerText={userAnswerForChat?.correctAnswerText}
+              />
+            </div>
           );
         }
         setError("Cannot start chat: current question is not available.");
-        setGameState(previousGameState);
+        handleStateTransition(previousGameState);
         return null;
       default:
         console.warn(
@@ -601,14 +611,18 @@ const App: React.FC = () => {
           gameState,
           "Falling back to COURSE_LIST."
         );
-        setGameState(GameState.COURSE_LIST);
+        handleStateTransition(GameState.COURSE_LIST);
         return <LoadingIndicator message="Unknown state, redirecting..." />;
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {showShortcutGuide && <ShortcutGuide onClose={toggleShortcutGuide} />}
+    <div className="min-h-screen flex flex-col items-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 transition-smooth">
+      {showShortcutGuide && (
+        <div className="animate-fadeIn">
+          <ShortcutGuide onClose={toggleShortcutGuide} />
+        </div>
+      )}
       {showInfoModal && (
         <InfoModal
           isOpen={showInfoModal}
@@ -626,8 +640,8 @@ const App: React.FC = () => {
           cancelButtonText={modalConfig.cancelButtonText}
         />
       )}
-      <header className="mb-8 text-center w-full max-w-3xl relative">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 mt-8 md:mt-4 break-words px-2">
+      <header className="mb-8 text-center w-full max-w-3xl relative main-header">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 mt-8 md:mt-4 break-words px-2 transition-smooth">
           {pageTitle}
         </h1>
         {(gameState === GameState.PLAYING ||
@@ -650,7 +664,7 @@ const App: React.FC = () => {
         <div className="absolute top-0 right-0 flex gap-2">
           <button
             onClick={() => setShowInfoModal(true)}
-            className="p-2 text-slate-400 hover:text-slate-300 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-300 transition-smooth"
             title="App Information"
             aria-label="App Information"
           >
@@ -658,7 +672,7 @@ const App: React.FC = () => {
           </button>
           <button
             onClick={() => setShowApiKeySettings(true)}
-            className="p-2 text-slate-400 hover:text-slate-300 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-300 transition-smooth"
             title="API Key Settings"
             aria-label="API Key Settings"
           >
@@ -666,18 +680,18 @@ const App: React.FC = () => {
           </button>
         </div>
       </header>
-      <main className="w-full max-w-2xl md:max-w-3xl bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 transition-all duration-300 ease-in-out">
+      <main className="w-full max-w-2xl md:max-w-3xl bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 transition-smooth main-container animate-scaleIn">
         {renderContent()}
       </main>
       <footer className="mt-12 text-center text-slate-500 text-sm flex items-center justify-center gap-3">
-        <p>Powered by Google Gemini API. &copy; {new Date().getFullYear()}</p>
+        <p>Made with ❤️ and 🤖. &copy; {new Date().getFullYear()}</p>
         <button
           onClick={toggleShortcutGuide}
-          className="p-1.5 rounded-full hover:bg-slate-700 transition-colors"
+          className="p-1.5 rounded-full hover:bg-slate-700 transition-smooth"
           title="View Keyboard Shortcuts"
           aria-label="View Keyboard Shortcuts"
         >
-          <Keyboard className="w-5 h-5 text-slate-400 hover:text-slate-300" />
+          <Keyboard className="w-5 h-5 text-slate-400 hover:text-slate-300 transition-smooth" />
         </button>
       </footer>
     </div>
