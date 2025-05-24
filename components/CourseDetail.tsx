@@ -8,6 +8,7 @@ import type {
   QuizAttempt,
 } from "../types";
 import { GeminiModel as GeminiModelEnum } from "../types";
+import { generateSingleContent } from "../services/geminiService";
 
 interface CourseDetailProps {
   course: Course;
@@ -82,71 +83,13 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
 
     setIsGeneratingContent(true);
     try {
-      // We'll create a simple API call for single content generation
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": localStorage.getItem("gemini_api_key") || "",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `You are an expert educational content creator. Based on this user prompt: "${newContentText.trim()}", create comprehensive, well-structured educational content.
-
-Please provide:
-1. A clear, descriptive title for this content
-2. Detailed, educational content (500-1000 words) that covers the topic thoroughly
-
-Format your response as JSON:
-{
-  "title": "Your Generated Title Here",
-  "content": "Your comprehensive educational content here with proper formatting, examples, and explanations"
-}
-
-Make the content educational, accurate, and well-structured with clear explanations and relevant examples.`,
-                  },
-                ],
-              },
-            ],
-            tools: [{ googleSearch: {} }],
-            generationConfig: {
-              temperature: 0.7,
-            },
-          }),
-        }
+      const content = await generateSingleContent(
+        newContentText,
+        selectedModel
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to generate content");
-      }
-
-      const data = await response.json();
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!responseText) {
-        throw new Error("No response received from AI model");
-      }
-
-      // Extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("Could not find valid JSON in AI response");
-      }
-
-      const parsedResponse = JSON.parse(jsonMatch[0]);
-
-      if (!parsedResponse.title || !parsedResponse.content) {
-        throw new Error("Invalid response format from AI model");
-      }
-
-      // Fill in the generated content
-      setNewContentTitle(parsedResponse.title);
-      setNewContentText(parsedResponse.content);
+      setNewContentTitle(content.title);
+      setNewContentText(content.content);
     } catch (error) {
       console.error("Error generating content:", error);
       alert(

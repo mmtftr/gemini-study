@@ -538,3 +538,78 @@ Your summary:
     throw new Error(errorMessage);
   }
 }
+
+export async function generateSingleContent(
+  newContentText: string,
+  modelName: GeminiModel
+): Promise<{
+  title: string;
+  content: string;
+}> {
+  const ai = getAiInstance();
+  if (!ai) {
+    throw new Error(
+      "No API key provided. Please provide your Gemini API key to use this feature."
+    );
+  }
+
+  const prompt = `You are an expert educational content creator. Based on this user prompt: "${newContentText.trim()}", create comprehensive, well-structured educational content.
+
+Make the content educational, accurate, and well-structured with clear explanations and relevant examples. The content should be 500-1000 words and cover the topic thoroughly.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [prompt],
+      config: {
+        temperature: 0.7,
+        responseSchema: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              description:
+                "A clear, descriptive title for this educational content",
+            },
+            content: {
+              type: "string",
+              description:
+                "Comprehensive educational content (500-1000 words) with proper formatting, examples, and explanations",
+            },
+          },
+          required: ["title", "content"],
+        },
+      },
+    });
+
+    const responseText = response.text;
+    if (!responseText) {
+      throw new Error("No response received from AI model");
+    }
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch {
+      throw new Error("Failed to parse response as JSON");
+    }
+
+    if (!parsedData.title || !parsedData.content) {
+      throw new Error("Invalid response format from AI model");
+    }
+
+    return {
+      title: parsedData.title,
+      content: parsedData.content,
+    };
+  } catch (error) {
+    console.error("Error generating content:", error);
+    let errorMessage = "Failed to generate content.";
+    if (error instanceof Error) {
+      errorMessage += ` ${error.message}`;
+    } else {
+      errorMessage += ` ${String(error)}`;
+    }
+    throw new Error(errorMessage);
+  }
+}
