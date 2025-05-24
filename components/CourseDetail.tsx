@@ -7,7 +7,6 @@ import type {
   GeminiModel,
   QuizAttempt,
 } from "../types";
-import { GeminiModel as GeminiModelEnum } from "../types";
 import { generateSingleContent } from "../services/geminiService";
 
 interface CourseDetailProps {

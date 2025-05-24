@@ -451,7 +451,6 @@ const App: React.FC = () => {
                 }}
                 onViewAttempt={courseHook.handleViewQuizAttempt}
                 selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
                 initialNumQuestions={numQuestions}
                 onEditCourseName={courseHook.handleUpdateCourseName}
                 onDeleteCourse={courseHook.handleDeleteCourseRequest}
@@ -489,7 +488,6 @@ const App: React.FC = () => {
               onGenerateQuiz={quizHook.handleQuizGeneration}
               initialNumQuestions={numQuestions}
               selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
               onNavigateToCourses={navigateToCoursesWithResets}
             />
           </div>
