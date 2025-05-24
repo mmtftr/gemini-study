@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* View Transitions API support */
 @supports (view-transition-name: none) {
