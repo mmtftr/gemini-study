@@ -23,6 +23,103 @@ function getAiInstance(): GoogleGenAI | null {
   return new GoogleGenAI({ apiKey: userApiKey });
 }
 
+// Course generation with Google search grounding
+export async function generateCourseContent(
+  topic: string,
+  modelName: GeminiModel = GeminiModel.FLASH_2_0
+): Promise<{
+  courseTitle: string;
+  documents: Array<{ title: string; content: string }>;
+}> {
+  const ai = getAiInstance();
+  if (!ai) {
+    throw new Error(
+      "No API key provided. Please provide your Gemini API key to use this feature."
+    );
+  }
+
+  const prompt = `You are an expert course designer. Create a comprehensive learning course about "${topic}".
+
+IMPORTANT: Use current, accurate information from web search to ensure the content is up-to-date and factual.
+
+Please provide:
+1. A clear, engaging course title
+2. 3-4 course documents/chapters covering different aspects of the topic
+
+Format your response as JSON:
+{
+  "courseTitle": "Your Course Title Here",
+  "documents": [
+    {
+      "title": "Document 1 Title",
+      "content": "Comprehensive content for document 1 with current information, examples, and explanations"
+    },
+    {
+      "title": "Document 2 Title",
+      "content": "Comprehensive content for document 2 with current information, examples, and explanations"
+    }
+  ]
+}
+
+Make each document substantial (300-800 words) and educational. Include:
+- Key concepts and definitions
+- Real-world examples and applications
+- Current trends or recent developments (use web search for this)
+- Important facts and figures
+
+Ensure the content is accurate, well-structured, and suitable for creating quiz questions.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [prompt],
+      config: {
+        tools: [{ googleSearch: {} }],
+        temperature: 0.7,
+      },
+    });
+
+    const responseText = response.text;
+    if (!responseText) {
+      throw new Error("No response received from AI model");
+    }
+
+    // Extract JSON from response
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Could not find valid JSON in AI response");
+    }
+
+    const parsedResponse = JSON.parse(jsonMatch[0]);
+
+    if (
+      !parsedResponse.courseTitle ||
+      !parsedResponse.documents ||
+      !Array.isArray(parsedResponse.documents)
+    ) {
+      throw new Error("Invalid response format from AI model");
+    }
+
+    return {
+      courseTitle: parsedResponse.courseTitle,
+      documents: parsedResponse.documents,
+    };
+  } catch (error) {
+    console.error("Error generating course content:", error);
+    let errorMessage = "Failed to generate course content.";
+    if (error instanceof Error) {
+      if (error.message.toLowerCase().includes("api key not valid")) {
+        errorMessage = "API Key is not valid. Please check your configuration.";
+      } else if (error.message.includes("JSON")) {
+        errorMessage = "Failed to parse AI response. Please try again.";
+      } else {
+        errorMessage += ` ${error.message}`;
+      }
+    }
+    throw new Error(errorMessage);
+  }
+}
+
 const QUESTION_DELIMITER = "\n###END_OF_QUESTION_JSON###\n";
 
 const constructStreamingPrompt = (
@@ -334,7 +431,8 @@ export async function summarizeQuizPerformance(
   userAnswers: UserAnswer[], // User's answers for the questions they attempted
   score: number,
   totalQuestionsAttempted: number, // Number of questions the user actually saw and answered
-  modelName: GeminiModel
+  modelName: GeminiModel,
+  previousAnalyses?: string[] // Previous performance analyses for this course
 ): Promise<string> {
   const ai = getAiInstance();
   if (!ai) {
@@ -343,13 +441,30 @@ export async function summarizeQuizPerformance(
     );
   }
 
-  const prompt = `
-You are an AI tutor. A user has just completed a quiz. Your task is to provide a constructive, analytical summary of their performance.
+  let prompt = `You are an AI tutor. A user has just completed a quiz. Your task is to provide a constructive, analytical summary of their performance.
 
 Quiz Performance:
 - Score: ${score} out of ${totalQuestionsAttempted} (${Math.round(
     (score / totalQuestionsAttempted) * 100
-  )}%)
+  )}%)`;
+
+  if (previousAnalyses && previousAnalyses.length > 0) {
+    prompt += `
+
+Previous Performance Analyses:
+${previousAnalyses
+  .map(
+    (analysis, index) => `
+Analysis ${index + 1}:
+${analysis}
+---`
+  )
+  .join("\n")}
+
+Consider these previous analyses to identify patterns of improvement or recurring issues.`;
+  }
+
+  prompt += `
 
 User's Answers and Question Details:
 ${userAnswers
@@ -384,17 +499,18 @@ Question ${index + 1}: ${ua.questionText}
   .join("\n")}
 
 Instructions for Your Summary:
-1.  Start with an encouraging overall comment about their effort and performance.
-2.  Analyze their performance by identifying strengths and weaknesses. Present these as **bullet points** under clear headings (e.g., "Strengths:", "Areas for Improvement:").
-    *   For strengths, point out concepts or types of questions they answered correctly.
-    *   For weaknesses/areas for improvement:
-        *   Focus on the questions answered incorrectly.
-        *   Analyze *why* the user might have chosen their incorrect option. Consider the rationale provided for *their chosen option* (if it was misleading) and contrast it with the rationale for the *correct answer*.
-        *   Briefly explain the correct concept, drawing from the provided rationales for the correct answers. Do not just repeat the rationales verbatim but synthesize the information.
-3.  Suggest 2-3 specific key concepts or topics the user should review based on their incorrect answers.
-4.  Keep the summary concise (around 3-5 paragraphs total, including bullet points) and use clear, encouraging language.
-5.  Do NOT just list the questions and answers again. Provide genuine analysis and insight into *patterns* of understanding or misunderstanding.
-6.  Output the entire summary in Markdown format for readability.
+1. Start with a brief encouraging comment about their effort and performance.
+2. Analyze their performance concisely with bullet points under clear headings ("Strengths:" and "Areas for Improvement:").
+   - For strengths, highlight concepts they understood well.
+   - For areas of improvement, focus on patterns in incorrect answers and specific concepts to review.
+3. Suggest 2-3 key topics for further study based on their mistakes.
+4. Keep the summary concise (2-3 paragraphs maximum) and actionable.${
+    previousAnalyses && previousAnalyses.length > 0
+      ? `
+5. Compare their current performance to previous attempts and note any improvements or new challenges.`
+      : ""
+  }
+6. Use Markdown format for readability.
 
 Your summary:
 `;

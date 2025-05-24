@@ -1,10 +1,11 @@
-import { Keyboard, Settings } from "lucide-react"; // Added Settings icon
+import { Info, Keyboard, Settings } from "lucide-react"; // Added Info icon
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiKeySetup } from "./components/ApiKeySetup"; // Added
 import { ConfirmModal } from "./components/ConfirmModal";
 import { CourseDetail } from "./components/CourseDetail";
 import { CourseList } from "./components/CourseList";
 import { ErrorMessage } from "./components/ErrorMessage";
+import { InfoModal } from "./components/InfoModal"; // Added
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { QuestionChat } from "./components/QuestionChat";
 import { QuizHistoryDetail } from "./components/QuizHistoryDetail";
@@ -19,7 +20,12 @@ import { useModalManagement } from "./hooks/useModalManagement";
 import { useQuizManagement } from "./hooks/useQuizManagement";
 
 import * as db from "./db";
-import { clearApiKey, getApiKey, setApiKey } from "./services/geminiService"; // Added
+import {
+  clearApiKey,
+  generateCourseContent,
+  getApiKey,
+  setApiKey,
+} from "./services/geminiService"; // Added generateCourseContent
 import { GameState, GeminiModel } from "./types";
 
 const App: React.FC = () => {
@@ -36,6 +42,7 @@ const App: React.FC = () => {
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [hasApiKey, setHasApiKey] = useState<boolean>(false); // Added
   const [showApiKeySettings, setShowApiKeySettings] = useState<boolean>(false); // Added
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false); // Added
 
   // Initialize Hooks - ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const { modalConfig, openModal, closeModal, confirmModalAction } =
@@ -85,32 +92,95 @@ const App: React.FC = () => {
           (activeElement as HTMLElement).isContentEditable)
       );
     },
-    isExternalModalOpen: !!modalConfig?.isOpen || showApiKeySettings,
+    isExternalModalOpen:
+      !!modalConfig?.isOpen || showApiKeySettings || showInfoModal,
   });
 
   // API Key management
-  const handleApiKeyProvided = useCallback((apiKey: string) => {
-    setApiKey(apiKey);
-    setHasApiKey(true);
-    setShowApiKeySettings(false);
-    // Store in localStorage for persistence
-    localStorage.setItem("gemini_api_key", apiKey);
-  }, []);
+  const handleApiKeyProvided = useCallback(
+    (apiKey: string, model: GeminiModel) => {
+      setApiKey(apiKey);
+      setHasApiKey(true);
+      setSelectedModel(model); // Set the selected model from API key setup
+      setShowApiKeySettings(false);
+      // Store in localStorage for persistence
+      localStorage.setItem("gemini_api_key", apiKey);
+      localStorage.setItem("default_model", model);
+    },
+    []
+  );
 
   const handleClearApiKey = useCallback(() => {
     clearApiKey();
     setHasApiKey(false);
     localStorage.removeItem("gemini_api_key");
+    localStorage.removeItem("default_model");
+    localStorage.removeItem("info_modal_shown");
     // Reset to course list when API key is cleared
     setGameState(GameState.COURSE_LIST);
   }, []);
 
-  // Check for stored API key on app load
+  // Course generation with AI
+  const handleGenerateCourse = useCallback(
+    async (topic: string) => {
+      setLoadingMessage(`Generating course content for "${topic}"...`);
+      setError(null);
+      try {
+        const { courseTitle, documents } = await generateCourseContent(
+          topic,
+          GeminiModel.FLASH_2_0
+        );
+
+        // Create the course
+        const courseId = await db.addCourse(courseTitle);
+
+        // Add each document as course content
+        for (const doc of documents) {
+          await db.addCourseTextContent(courseId, doc.title, doc.content);
+        }
+
+        // Load the new course and navigate to it
+        const newCourse = await db.getCourseById(courseId);
+        if (newCourse) {
+          courseHook.setCurrentCourse(newCourse);
+          await courseHook.loadCourseDetails(newCourse);
+          setGameState(GameState.COURSE_DETAIL);
+
+          // Refresh the course list
+          const allCourses = await db.getAllCourses();
+          courseHook.setInitialCourses(allCourses);
+        }
+      } catch (err) {
+        console.error("Failed to generate course:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to generate course. Please try again."
+        );
+      }
+      setLoadingMessage("");
+    },
+    [courseHook, setLoadingMessage, setError, setGameState]
+  );
+
+  // Check for stored API key and show info modal on first load
   useEffect(() => {
     const storedApiKey = localStorage.getItem("gemini_api_key");
+    const storedModel = localStorage.getItem("default_model") as GeminiModel;
+    const infoModalShown = localStorage.getItem("info_modal_shown");
+
     if (storedApiKey) {
       setApiKey(storedApiKey);
       setHasApiKey(true);
+      if (storedModel && Object.values(GeminiModel).includes(storedModel)) {
+        setSelectedModel(storedModel);
+      }
+
+      // Show info modal on first entry
+      if (!infoModalShown) {
+        setShowInfoModal(true);
+        localStorage.setItem("info_modal_shown", "true");
+      }
     }
   }, []);
 
@@ -288,6 +358,7 @@ const App: React.FC = () => {
               }}
               onEditCourseName={courseHook.handleUpdateCourseName}
               onDeleteCourse={courseHook.handleDeleteCourseRequest}
+              onGenerateCourse={handleGenerateCourse}
               isLoading={
                 !!loadingMessage && gameState === GameState.COURSE_LIST
               }
@@ -538,6 +609,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {showShortcutGuide && <ShortcutGuide onClose={toggleShortcutGuide} />}
+      {showInfoModal && (
+        <InfoModal
+          isOpen={showInfoModal}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
       {modalConfig?.isOpen && (
         <ConfirmModal
           isOpen={modalConfig.isOpen}
@@ -569,15 +646,25 @@ const App: React.FC = () => {
           </p>
         )}
 
-        {/* API Key Settings Button */}
-        <button
-          onClick={() => setShowApiKeySettings(true)}
-          className="absolute top-0 right-0 p-2 text-slate-400 hover:text-slate-300 transition-colors"
-          title="API Key Settings"
-          aria-label="API Key Settings"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        {/* API Key Settings and Info Buttons */}
+        <div className="absolute top-0 right-0 flex gap-2">
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="p-2 text-slate-400 hover:text-slate-300 transition-colors"
+            title="App Information"
+            aria-label="App Information"
+          >
+            <Info className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setShowApiKeySettings(true)}
+            className="p-2 text-slate-400 hover:text-slate-300 transition-colors"
+            title="API Key Settings"
+            aria-label="API Key Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
       </header>
       <main className="w-full max-w-2xl md:max-w-3xl bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 transition-all duration-300 ease-in-out">
         {renderContent()}

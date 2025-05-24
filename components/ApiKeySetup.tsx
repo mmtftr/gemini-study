@@ -1,21 +1,25 @@
 import { ExternalLink, Key } from "lucide-react";
 import React, { useState } from "react";
+import { GeminiModel } from "../types";
 
 interface ApiKeySetupProps {
-  onApiKeyProvided: (apiKey: string) => void;
+  onApiKeyProvided: (apiKey: string, selectedModel: GeminiModel) => void;
 }
 
 export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({
   onApiKeyProvided,
 }) => {
   const [apiKey, setApiKey] = useState("");
+  const [selectedModel, setSelectedModel] = useState<GeminiModel>(
+    GeminiModel.FLASH
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (apiKey.trim()) {
       setIsLoading(true);
-      onApiKeyProvided(apiKey.trim());
+      onApiKeyProvided(apiKey.trim(), selectedModel);
       setIsLoading(false);
     }
   };
@@ -53,6 +57,35 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({
               required
               disabled={isLoading}
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="model"
+              className="block text-sm font-medium text-sky-300 mb-2"
+            >
+              Default AI Model
+            </label>
+            <select
+              id="model"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as GeminiModel)}
+              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-slate-100"
+              disabled={isLoading}
+            >
+              <option value={GeminiModel.FLASH}>
+                Gemini 2.5 Flash (Faster, Good for most uses)
+              </option>
+              <option value={GeminiModel.PRO}>
+                Gemini 2.5 Pro (Slightly Slower, Potentially Higher Quality)
+              </option>
+              <option value={GeminiModel.FLASH_2_0}>
+                Gemini 2.0 Flash (Latest, with Google Search access)
+              </option>
+            </select>
+            <p className="text-xs text-slate-400 mt-1">
+              You can change this later for individual quizzes
+            </p>
           </div>
 
           <button
