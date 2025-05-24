@@ -1,4 +1,4 @@
-import { Info, Keyboard, Settings } from "lucide-react"; // Added Info icon
+import { Github, Info, Keyboard, Settings } from "lucide-react"; // Added Info and Github icons
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiKeySetup } from "./components/ApiKeySetup"; // Added
 import { ConfirmModal } from "./components/ConfirmModal";
@@ -42,13 +42,13 @@ const infoModalShown = localStorage.getItem("info_modal_shown");
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.LOADING);
   const [previousGameState, setPreviousGameState] = useState<GameState>(
-    GameState.COURSE_LIST
+    GameState.COURSE_LIST,
   );
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] =
     useState<string>("Loading app...");
   const [selectedModel, setSelectedModel] = useState<GeminiModel>(
-    storedModel || GeminiModel.FLASH
+    storedModel || GeminiModel.FLASH,
   );
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [hasApiKey, setHasApiKey] = useState<boolean>(!!storedApiKey); // Added
@@ -140,7 +140,7 @@ const App: React.FC = () => {
       localStorage.setItem("gemini_api_key", apiKey);
       localStorage.setItem("default_model", model);
     },
-    []
+    [],
   );
 
   const handleClearApiKey = useCallback(() => {
@@ -161,7 +161,7 @@ const App: React.FC = () => {
       try {
         const { courseTitle, documents } = await generateCourseContent(
           topic,
-          GeminiModel.FLASH
+          GeminiModel.FLASH,
         );
 
         // Create the course
@@ -188,12 +188,12 @@ const App: React.FC = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to generate course. Please try again."
+            : "Failed to generate course. Please try again.",
         );
       }
       setLoadingMessage("");
     },
-    [courseHook, setLoadingMessage, setError]
+    [courseHook, setLoadingMessage, setError],
   );
 
   // Check for stored API key and show info modal on first load
@@ -287,9 +287,9 @@ const App: React.FC = () => {
       case GameState.CHATTING_QUESTION:
         return `Discuss: ${quizHook.quizTopic}`;
       case GameState.LOADING:
-        return "Loading Quiz Master";
+        return "Loading Gemini Study";
       default:
-        return "Gemini Quiz Master";
+        return "Gemini Study";
     }
   }, [
     gameState,
@@ -313,7 +313,7 @@ const App: React.FC = () => {
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 animate-fadeIn">
         <div className="w-full max-w-md bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 animate-scaleIn">
           <h2 className="text-2xl font-bold text-sky-300 mb-4">
-            API Key Settings
+            API Key & Model Settings
           </h2>
           <div className="space-y-4">
             <div className="p-4 bg-slate-700/50 rounded-lg">
@@ -322,12 +322,43 @@ const App: React.FC = () => {
                 {getApiKey()?.substring(0, 10)}...{getApiKey()?.substring(-4)}
               </p>
             </div>
+
+            <div>
+              <label
+                htmlFor="settingsModel"
+                className="block text-sm font-medium text-sky-300 mb-2"
+              >
+                Default AI Model
+              </label>
+              <select
+                id="settingsModel"
+                value={selectedModel}
+                onChange={(e) =>
+                  setSelectedModel(e.target.value as GeminiModel)
+                }
+                className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-slate-100"
+              >
+                <option value={GeminiModel.FLASH}>
+                  Gemini 2.5 Flash (Faster, Good for most uses)
+                </option>
+                <option value={GeminiModel.PRO}>
+                  Gemini 2.5 Pro (Slightly Slower, Potentially Higher Quality)
+                </option>
+                <option value={GeminiModel.FLASH_2_0}>
+                  Gemini 2.0 Flash (Latest, with Google Search access)
+                </option>
+              </select>
+              <p className="text-xs text-slate-400 mt-1">
+                This will be used as the default for new quizzes
+              </p>
+            </div>
+
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowApiKeySettings(false)}
                 className="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition-smooth"
               >
-                Cancel
+                Close
               </button>
               <button
                 onClick={handleClearApiKey}
@@ -406,7 +437,7 @@ const App: React.FC = () => {
                       ? courseHook.currentCourseContents
                           .map(
                             (cc) =>
-                              `Content Title: ${cc.title}\n${cc.textContent}`
+                              `Content Title: ${cc.title}\n${cc.textContent}`,
                           )
                           .join("\n\n---\n\n")
                       : undefined;
@@ -415,7 +446,7 @@ const App: React.FC = () => {
                     numQ,
                     model,
                     combinedContextText,
-                    courseHook.currentCourse!.id
+                    courseHook.currentCourse!.id,
                   );
                 }}
                 onViewAttempt={courseHook.handleViewQuizAttempt}
@@ -597,7 +628,7 @@ const App: React.FC = () => {
       case GameState.CHATTING_QUESTION:
         if (currentQFromDisplay) {
           const userAnswerForChat = quizHook.userAnswers.find(
-            (ua) => ua.questionText === currentQFromDisplay.question
+            (ua) => ua.questionText === currentQFromDisplay.question,
           );
           return (
             <div className="main-content">
@@ -619,7 +650,7 @@ const App: React.FC = () => {
         console.warn(
           "Reached unknown game state:",
           gameState,
-          "Falling back to COURSE_LIST."
+          "Falling back to COURSE_LIST.",
         );
         setGameState(GameState.COURSE_LIST);
         return <LoadingIndicator message="Unknown state, redirecting..." />;
@@ -695,9 +726,19 @@ const App: React.FC = () => {
       </main>
       <footer className="mt-12 text-center text-slate-500 text-sm flex items-center justify-center gap-3">
         <p>Made with ❤️ and 🤖. &copy; {new Date().getFullYear()}</p>
+        <a
+          href="https://github.com/mmtftr/gemini-study"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1.5 rounded-full hover:bg-slate-700 transition-smooth"
+          title="View on GitHub"
+          aria-label="View on GitHub"
+        >
+          <Github className="w-5 h-5 text-slate-400 hover:text-slate-300 transition-smooth" />
+        </a>
         <button
           onClick={toggleShortcutGuide}
-          className="p-1.5 rounded-full hover:bg-slate-700 transition-smooth"
+          className="p-1.5 rounded-full cursor-pointer hover:bg-slate-700 transition-smooth"
           title="View Keyboard Shortcuts"
           aria-label="View Keyboard Shortcuts"
         >

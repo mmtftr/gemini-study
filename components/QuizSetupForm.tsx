@@ -5,11 +5,10 @@ interface QuizSetupFormProps {
   onGenerateQuiz: (
     topic: string,
     numQuestions: number,
-    model: GeminiModel
+    model: GeminiModel,
   ) => void;
   initialNumQuestions: number;
   selectedModel: GeminiModel;
-  onModelChange: (model: GeminiModel) => void;
   onNavigateToCourses: () => void;
 }
 
@@ -17,7 +16,6 @@ export const QuizSetupForm: React.FC<QuizSetupFormProps> = ({
   onGenerateQuiz,
   initialNumQuestions,
   selectedModel,
-  onModelChange,
   onNavigateToCourses,
 }) => {
   const [topic, setTopic] = useState<string>("");
@@ -74,7 +72,7 @@ export const QuizSetupForm: React.FC<QuizSetupFormProps> = ({
             value={numQuestions}
             onChange={(e) =>
               setNumQuestions(
-                Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1))
+                Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)),
               )
             }
             min="1"
@@ -83,32 +81,6 @@ export const QuizSetupForm: React.FC<QuizSetupFormProps> = ({
             required
             aria-label="Number of Questions"
           />
-        </div>
-
-        <div>
-          <label
-            htmlFor="model"
-            className="block text-sm font-medium text-sky-300 mb-2"
-          >
-            Select AI Model
-          </label>
-          <select
-            id="model"
-            value={selectedModel}
-            onChange={(e) => onModelChange(e.target.value as GeminiModel)}
-            className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-slate-100 transition-smooth"
-            aria-label="Select AI Model"
-          >
-            <option value={GeminiModel.FLASH}>
-              Gemini 2.5 Flash (Faster, Good for most uses)
-            </option>
-            <option value={GeminiModel.PRO}>
-              Gemini 2.5 Pro (Slightly Slower, Potentially Higher Quality)
-            </option>
-            <option value={GeminiModel.FLASH_2_0}>
-              Gemini 2.0 Flash (Latest, with Google Search access)
-            </option>
-          </select>
         </div>
 
         <button

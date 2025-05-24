@@ -1,26 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gemini Study</title>
+        <link rel="icon" href="favicon.ico" type="image/x-icon" />
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+        <script>
+            // View Transitions API polyfill check and helper
+            window.viewTransition = function (callback) {
+                if (document.startViewTransition) {
+                    document.startViewTransition(callback);
+                } else {
+                    callback();
+                }
+            };
+        </script>
+        <link href="/index.css" rel="stylesheet" />
+    </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gemini Quiz Master</title>
-  <script>
-    // View Transitions API polyfill check and helper
-    window.viewTransition = function (callback) {
-      if (document.startViewTransition) {
-        document.startViewTransition(callback);
-      } else {
-        callback();
-      }
-    };
-  </script>
-  <link href="/src/index.css" rel="stylesheet">
-</head>
-
-<body class="bg-slate-900 text-slate-100">
-  <div id="root"></div>
-  <script type="module" src="/src/index.tsx"></script>
-</body>
-
+    <body class="bg-slate-900 text-slate-100">
+        <div id="root"></div>
+        <script type="module" src="/index.tsx"></script>
+    </body>
 </html>

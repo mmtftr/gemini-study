@@ -17,22 +17,21 @@ interface CourseDetailProps {
   onAddContent: (
     courseId: number,
     title: string,
-    textContent: string
+    textContent: string,
   ) => Promise<void>;
   onDeleteContent: (contentId: number) => void;
   onBackToList: () => void;
   onStartQuizFromCourseContent: (
     numQuestions: number,
-    model: GeminiModel
+    model: GeminiModel,
   ) => void;
   onViewAttempt: (attempt: QuizAttempt) => void;
   selectedModel: GeminiModel;
-  onModelChange: (model: GeminiModel) => void;
   initialNumQuestions: number;
   onUpdateContent: (
     contentId: number,
     title: string,
-    textContent: string
+    textContent: string,
   ) => Promise<void>;
   onDeleteAttempt: (attemptId: number) => void;
   onEditCourseName: (courseId: number, newName: string) => Promise<void>;
@@ -50,7 +49,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   onStartQuizFromCourseContent,
   onViewAttempt,
   selectedModel,
-  onModelChange,
   initialNumQuestions,
   onUpdateContent,
   isLoading,
@@ -70,7 +68,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
       await onAddContent(
         course.id,
         newContentTitle.trim(),
-        newContentText.trim()
+        newContentText.trim(),
       );
       setNewContentTitle("");
       setNewContentText("");
@@ -85,7 +83,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
     try {
       const content = await generateSingleContent(
         newContentText,
-        selectedModel
+        selectedModel,
       );
 
       setNewContentTitle(content.title);
@@ -95,7 +93,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to generate content. Please try again."
+          : "Failed to generate content. Please try again.",
       );
     } finally {
       setIsGeneratingContent(false);
@@ -119,7 +117,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
       await onUpdateContent(
         editingContentId,
         editTitle.trim(),
-        editText.trim()
+        editText.trim(),
       );
       setEditingContentId(null);
       setEditTitle("");
@@ -358,35 +356,16 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 value={numQuizQuestions}
                 onChange={(e) =>
                   setNumQuizQuestions(
-                    Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1))
+                    Math.max(
+                      1,
+                      Math.min(20, parseInt(e.target.value, 10) || 1),
+                    ),
                   )
                 }
                 min="1"
                 max="20"
                 className="w-full md:w-1/2 p-2.5 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-1 focus:ring-purple-500 outline-none text-slate-100 transition-smooth"
               />
-            </div>
-            <div>
-              <label
-                htmlFor="courseQuizModel"
-                className="block text-sm font-medium text-sky-300 mb-1"
-              >
-                AI Model
-              </label>
-              <select
-                id="courseQuizModel"
-                value={selectedModel}
-                onChange={(e) =>
-                  onModelChange(e.target.value as GeminiModelEnum)
-                }
-                className="w-full md:w-1/2 p-2.5 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:ring-1 focus:ring-purple-500 outline-none text-slate-100 transition-smooth"
-              >
-                <option value={GeminiModelEnum.FLASH}>Gemini 2.5 Flash</option>
-                <option value={GeminiModelEnum.PRO}>Gemini 2.5 Pro</option>
-                <option value={GeminiModelEnum.FLASH_2_0}>
-                  Gemini 2.0 Flash
-                </option>
-              </select>
             </div>
             <button
               onClick={() =>
@@ -435,15 +414,15 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                           attempt.score / attempt.totalQuestionsInAttempt >= 0.7
                             ? "text-green-400"
                             : attempt.score / attempt.totalQuestionsInAttempt >=
-                              0.4
-                            ? "text-yellow-400"
-                            : "text-red-400"
+                                0.4
+                              ? "text-yellow-400"
+                              : "text-red-400"
                         }`}
                       >
                         {attempt.score}/{attempt.totalQuestionsInAttempt} (
                         {Math.round(
                           (attempt.score / attempt.totalQuestionsInAttempt) *
-                            100
+                            100,
                         )}
                         %)
                       </p>

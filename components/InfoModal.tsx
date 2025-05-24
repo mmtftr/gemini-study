@@ -48,7 +48,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             id="info-modal-title"
             className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 mb-2"
           >
-            Welcome to Gemini Quiz Master
+            Welcome to Gemini Study
           </h2>
           <p className="text-slate-300 text-lg">
             Your AI-powered learning companion
