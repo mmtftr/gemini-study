@@ -1,0 +1,6 @@
+{
+  "name": "Gemini Quiz Generator",
+  "description": "A web application that uses the Gemini API to generate quizzes on a given topic and allows users to play them. Provides feedback and rationales for each answer.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
