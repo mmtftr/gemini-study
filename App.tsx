@@ -35,13 +35,11 @@ declare global {
   }
 }
 
-
 const storedApiKey = localStorage.getItem("gemini_api_key");
 const storedModel = localStorage.getItem("default_model") as GeminiModel;
 const infoModalShown = localStorage.getItem("info_modal_shown");
 
 const App: React.FC = () => {
-
   const [gameState, setGameState] = useState<GameState>(GameState.LOADING);
   const [previousGameState, setPreviousGameState] = useState<GameState>(
     GameState.COURSE_LIST
@@ -109,12 +107,27 @@ const App: React.FC = () => {
       !!modalConfig?.isOpen || showApiKeySettings || showInfoModal,
   });
 
-  // Enhanced state transition with View Transitions API
-  const handleStateTransition = useCallback((newState: GameState) => {
+  // View Transitions for specific user actions
+  const navigateToSetup = useCallback(() => {
     window.viewTransition(() => {
-      setGameState(newState);
+      quizHook.resetQuizState();
+      setGameState(GameState.SETUP);
     });
-  }, []);
+  }, [quizHook]);
+
+  const navigateToCourseDetail = useCallback(() => {
+    window.viewTransition(() => {
+      courseHook.setViewingQuizAttempt(null);
+      setGameState(GameState.COURSE_DETAIL);
+    });
+  }, [courseHook]);
+
+  const navigateToCoursesWithResets = useCallback(() => {
+    window.viewTransition(() => {
+      quizHook.resetQuizState();
+      courseHook.navigateToCourseList();
+    });
+  }, [quizHook, courseHook]);
 
   // API Key management
   const handleApiKeyProvided = useCallback(
@@ -137,8 +150,8 @@ const App: React.FC = () => {
     localStorage.removeItem("default_model");
     localStorage.removeItem("info_modal_shown");
     // Reset to course list when API key is cleared
-    handleStateTransition(GameState.COURSE_LIST);
-  }, [handleStateTransition]);
+    setGameState(GameState.COURSE_LIST);
+  }, []);
 
   // Course generation with AI
   const handleGenerateCourse = useCallback(
@@ -148,7 +161,7 @@ const App: React.FC = () => {
       try {
         const { courseTitle, documents } = await generateCourseContent(
           topic,
-          GeminiModel.FLASH_2_0
+          GeminiModel.FLASH
         );
 
         // Create the course
@@ -164,7 +177,7 @@ const App: React.FC = () => {
         if (newCourse) {
           courseHook.setCurrentCourse(newCourse);
           await courseHook.loadCourseDetails(newCourse);
-          handleStateTransition(GameState.COURSE_DETAIL);
+          setGameState(GameState.COURSE_DETAIL);
 
           // Refresh the course list
           const allCourses = await db.getAllCourses();
@@ -180,7 +193,7 @@ const App: React.FC = () => {
       }
       setLoadingMessage("");
     },
-    [courseHook, setLoadingMessage, setError, handleStateTransition]
+    [courseHook, setLoadingMessage, setError]
   );
 
   // Check for stored API key and show info modal on first load
@@ -212,23 +225,18 @@ const App: React.FC = () => {
       try {
         const fetchedCourses = await db.getAllCourses();
         courseHook.setInitialCourses(fetchedCourses);
-        handleStateTransition(GameState.COURSE_LIST);
+        setGameState(GameState.COURSE_LIST);
         setError(null);
       } catch (err) {
         console.error("Failed to load initial data:", err);
         setError("Could not load app data. Please try refreshing.");
-        handleStateTransition(GameState.SETUP);
+        setGameState(GameState.SETUP);
       }
       setLoadingMessage("");
     };
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasApiKey]);
-
-  const navigateToCourseListWithResets = useCallback(() => {
-    quizHook.resetQuizState();
-    courseHook.navigateToCourseList();
-  }, [quizHook, courseHook]);
 
   // Flag for QuizPlayer: True if the current question is the last loaded, and more are expected from the stream.
   const quizPlayerIsWaitingForNext = useMemo(() => {
@@ -362,16 +370,13 @@ const App: React.FC = () => {
     switch (gameState) {
       case GameState.COURSE_LIST:
         return (
-          <div className="page-content">
+          <div className="main-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <CourseList
               courses={courseHook.courses}
               onCreateCourse={courseHook.handleCreateCourse}
               onSelectCourse={courseHook.handleSelectCourse}
-              onSetupNewQuiz={() => {
-                quizHook.resetQuizState();
-                handleStateTransition(GameState.SETUP);
-              }}
+              onSetupNewQuiz={navigateToSetup}
               onEditCourseName={courseHook.handleUpdateCourseName}
               onDeleteCourse={courseHook.handleDeleteCourseRequest}
               onGenerateCourse={handleGenerateCourse}
@@ -384,7 +389,7 @@ const App: React.FC = () => {
       case GameState.COURSE_DETAIL:
         if (courseHook.currentCourse) {
           return (
-            <div className="page-content">
+            <div className="main-content">
               {shouldShowPersistentError && <ErrorMessage message={error} />}
               <CourseDetail
                 course={courseHook.currentCourse}
@@ -394,7 +399,7 @@ const App: React.FC = () => {
                 onUpdateContent={courseHook.handleUpdateCourseContent}
                 onDeleteContent={courseHook.handleDeleteCourseContentRequest}
                 onDeleteAttempt={courseHook.handleDeleteQuizAttemptRequest}
-                onBackToList={navigateToCourseListWithResets}
+                onBackToList={navigateToCoursesWithResets}
                 onStartQuizFromCourseContent={(numQ, model) => {
                   const combinedContextText =
                     courseHook.currentCourseContents.length > 0
@@ -426,44 +431,45 @@ const App: React.FC = () => {
             </div>
           );
         }
-        navigateToCourseListWithResets();
+        navigateToCoursesWithResets();
         return <LoadingIndicator message="Redirecting to course list..." />;
 
       case GameState.QUIZ_HISTORY_DETAIL:
         if (courseHook.viewingQuizAttempt) {
           return (
-            <div className="page-content">
+            <div className="main-content">
               {shouldShowPersistentError && <ErrorMessage message={error} />}
               <QuizHistoryDetail
                 attempt={courseHook.viewingQuizAttempt}
-                onBack={() => {
-                  courseHook.setViewingQuizAttempt(null);
-                  handleStateTransition(GameState.COURSE_DETAIL);
-                }}
+                onBack={navigateToCourseDetail}
                 onRetakeQuiz={quizHook.handleRetakeQuiz}
               />
             </div>
           );
         }
-        handleStateTransition(GameState.COURSE_DETAIL);
+        setGameState(GameState.COURSE_DETAIL);
         return <LoadingIndicator message="Loading attempt details..." />;
 
       case GameState.SETUP:
         return (
-          <div className="page-content">
+          <div className="main-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <QuizSetupForm
               onGenerateQuiz={quizHook.handleQuizGeneration}
               initialNumQuestions={numQuestions}
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
-              onNavigateToCourses={navigateToCourseListWithResets}
+              onNavigateToCourses={navigateToCoursesWithResets}
             />
           </div>
         );
       case GameState.GENERATING_QUIZ:
         return (
-          <LoadingIndicator message={loadingMessage || "Generating quiz..."} />
+          <div className="main-content">
+            <LoadingIndicator
+              message={loadingMessage || "Generating quiz..."}
+            />
+          </div>
         );
 
       case GameState.PLAYING:
@@ -479,7 +485,7 @@ const App: React.FC = () => {
               ? GameState.COURSE_DETAIL
               : GameState.SETUP;
             return (
-              <div className="page-content">
+              <div className="main-content">
                 <ErrorMessage
                   message={
                     error ||
@@ -487,7 +493,7 @@ const App: React.FC = () => {
                   }
                 />
                 <button
-                  onClick={() => handleStateTransition(fallbackState)}
+                  onClick={() => setGameState(fallbackState)}
                   className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-smooth"
                 >
                   Back
@@ -496,20 +502,22 @@ const App: React.FC = () => {
             );
           } else {
             return (
-              <LoadingIndicator
-                message={
-                  loadingMessage ||
-                  `Loading question ${
-                    quizHook.currentQuestionIndex + 1
-                  } of ${numQuestions}...`
-                }
-              />
+              <div className="main-content">
+                <LoadingIndicator
+                  message={
+                    loadingMessage ||
+                    `Loading question ${
+                      quizHook.currentQuestionIndex + 1
+                    } of ${numQuestions}...`
+                  }
+                />
+              </div>
             );
           }
         }
 
         return (
-          <div className="page-content">
+          <div className="main-content">
             {error &&
               (gameState === GameState.PLAYING ||
                 gameState === GameState.SHOW_ANSWER) &&
@@ -539,29 +547,31 @@ const App: React.FC = () => {
 
       case GameState.SUMMARIZING_RESULTS:
         return (
-          <QuizResults
-            score={quizHook.score}
-            totalQuestions={quizHook.displayedQuestions.length}
-            onRestart={quizHook.handleRestartQuizSetup}
-            onSaveAndExit={() => quizHook.handleSaveAndExit(false)}
-            aiSummary={null}
-            isSummaryLoading={true}
-            quizTopic={quizHook.quizTopic}
-            onRetakeCurrentQuiz={
-              quizHook.generatedQuizData
-                ? quizHook.handleStartRetakeCurrentGeneratedQuiz
-                : undefined
-            }
-            isRetakeEnabled={
-              !!quizHook.generatedQuizData &&
-              !!quizHook.generatedQuizData.questions &&
-              quizHook.generatedQuizData.questions.length > 0
-            }
-          />
+          <div className="main-content">
+            <QuizResults
+              score={quizHook.score}
+              totalQuestions={quizHook.displayedQuestions.length}
+              onRestart={quizHook.handleRestartQuizSetup}
+              onSaveAndExit={() => quizHook.handleSaveAndExit(false)}
+              aiSummary={null}
+              isSummaryLoading={true}
+              quizTopic={quizHook.quizTopic}
+              onRetakeCurrentQuiz={
+                quizHook.generatedQuizData
+                  ? quizHook.handleStartRetakeCurrentGeneratedQuiz
+                  : undefined
+              }
+              isRetakeEnabled={
+                !!quizHook.generatedQuizData &&
+                !!quizHook.generatedQuizData.questions &&
+                quizHook.generatedQuizData.questions.length > 0
+              }
+            />
+          </div>
         );
       case GameState.RESULTS:
         return (
-          <div className="page-content">
+          <div className="main-content">
             {shouldShowPersistentError && <ErrorMessage message={error} />}
             <QuizResults
               score={quizHook.score}
@@ -590,7 +600,7 @@ const App: React.FC = () => {
             (ua) => ua.questionText === currentQFromDisplay.question
           );
           return (
-            <div className="page-content">
+            <div className="main-content">
               <QuestionChat
                 question={currentQFromDisplay}
                 onBackToQuiz={() => quizHook.handleEndChat(previousGameState)}
@@ -603,7 +613,7 @@ const App: React.FC = () => {
           );
         }
         setError("Cannot start chat: current question is not available.");
-        handleStateTransition(previousGameState);
+        setGameState(previousGameState);
         return null;
       default:
         console.warn(
@@ -611,7 +621,7 @@ const App: React.FC = () => {
           gameState,
           "Falling back to COURSE_LIST."
         );
-        handleStateTransition(GameState.COURSE_LIST);
+        setGameState(GameState.COURSE_LIST);
         return <LoadingIndicator message="Unknown state, redirecting..." />;
     }
   };
@@ -680,7 +690,7 @@ const App: React.FC = () => {
           </button>
         </div>
       </header>
-      <main className="w-full max-w-2xl md:max-w-3xl bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 transition-smooth main-container animate-scaleIn">
+      <main className="w-full max-w-2xl md:max-w-3xl bg-slate-800 shadow-2xl rounded-xl p-6 md:p-8 transition-smooth animate-scaleIn">
         {renderContent()}
       </main>
       <footer className="mt-12 text-center text-slate-500 text-sm flex items-center justify-center gap-3">

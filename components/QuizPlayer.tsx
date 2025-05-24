@@ -30,19 +30,9 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   showHint,
   onToggleHint,
   onStartChat,
-  isQuizGenerationComplete,
   isWaitingForNextStreamedQuestion,
   onExitQuizRequest,
 }) => {
-  const getNextButtonText = () => {
-    // isWaitingForNextStreamedQuestion is true if the question AFTER the current one is streaming.
-    if (isAnswered && isWaitingForNextStreamedQuestion)
-      return "Loading next...";
-    // If we are at the last question of the effective total, and generation is complete.
-    if (questionNumber >= totalQuestions && isQuizGenerationComplete)
-      return "Show Results";
-    return "Next Question";
-  };
 
   return (
     <div className="space-y-6">

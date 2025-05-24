@@ -82,9 +82,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
 
     setIsGeneratingContent(true);
     try {
-      // Use the generateCourseContent function but modify the prompt
-      const prompt = `Based on this prompt: "${newContentText.trim()}", create comprehensive educational content. Return a single document with detailed information, examples, and explanations.`;
-
       // We'll create a simple API call for single content generation
       const response = await fetch(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
@@ -293,7 +290,7 @@ Make the content educational, accurate, and well-structured with clear explanati
 
         {contents.length > 0 && (
           <ul className="space-y-3">
-            {contents.map((content, index) => (
+            {contents.map((content, _index) => (
               <li
                 key={content.id}
                 className="p-4 bg-slate-700 border border-slate-600 rounded-lg shadow relative transition-smooth hover:bg-slate-600/50"
@@ -473,7 +470,7 @@ Make the content educational, accurate, and well-structured with clear explanati
         )}
         {attempts.length > 0 && (
           <ul className="space-y-3">
-            {attempts.map((attempt, index) => (
+            {attempts.map((attempt, _index) => (
               <li key={attempt.id}>
                 <button
                   onClick={() => onViewAttempt(attempt)}

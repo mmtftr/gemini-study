@@ -214,7 +214,7 @@ export const CourseList: React.FC<CourseListProps> = ({
       {courses.length > 0 && (
         <div>
           <ul className="space-y-3">
-            {courses.map((course, index) => (
+            {courses.map((course, _index) => (
               <li key={course.id}>
                 <button
                   onClick={() => onSelectCourse(course)}

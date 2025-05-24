@@ -15,6 +15,13 @@
         animation-duration: 0.2s;
         animation-timing-function: ease-in-out;
       }
+
+      /* Custom view transition for main content */
+      ::view-transition-old(main-content),
+      ::view-transition-new(main-content) {
+        animation-duration: 0.3s;
+        animation-timing-function: ease-in-out;
+      }
     }
 
     /* Basic animations - much more subtle */
@@ -125,16 +132,8 @@
     }
 
     /* View transition names for better transitions */
-    .page-content {
-      view-transition-name: page-content;
-    }
-
-    .main-header {
-      view-transition-name: main-header;
-    }
-
-    .main-container {
-      view-transition-name: main-container;
+    .main-content {
+      view-transition-name: main-content;
     }
   </style>
   <script>

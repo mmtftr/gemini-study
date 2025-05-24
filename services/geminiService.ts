@@ -26,7 +26,7 @@ function getAiInstance(): GoogleGenAI | null {
 // Course generation with Google search grounding
 export async function generateCourseContent(
   topic: string,
-  modelName: GeminiModel = GeminiModel.FLASH_2_0
+  modelName: GeminiModel
 ): Promise<{
   courseTitle: string;
   documents: Array<{ title: string; content: string }>;
