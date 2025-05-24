@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as db from '../db';
 import type { Course, CourseTextContent, QuizAttempt } from '../types';
 import { GameState } from '../types';
-import type { ModalConfig, useModalManagement } from './useModalManagement';
+import type { useModalManagement } from './useModalManagement';
 
 interface UseCourseManagementProps {
   setLoadingMessage: (message: string) => void;
@@ -40,7 +40,7 @@ export const useCourseManagement = ({
     }
     setLoadingMessage('');
   }, [setLoadingMessage, setError]);
-  
+
   const loadCourseDetails = useCallback(async (courseToLoad?: Course) => {
     const targetCourse = courseToLoad || currentCourse;
     if (targetCourse && targetCourse.id) {
@@ -126,7 +126,7 @@ export const useCourseManagement = ({
           await db.deleteQuizAttemptsByCourseId(courseId);
           await db.deleteQuizStructuresByCourseId(courseId);
           await db.deleteCourse(courseId);
-          
+
           setCourses(prev => prev.filter(c => c.id !== courseId));
           if (currentCourse && currentCourse.id === courseId) {
             navigateToCourseList();
@@ -138,7 +138,7 @@ export const useCourseManagement = ({
       }
     });
   };
-  
+
   const handleSelectCourse = (course: Course) => {
     setCurrentCourse(course);
     setViewingQuizAttempt(null); // Clear any viewed attempt when selecting a new course
@@ -196,7 +196,7 @@ export const useCourseManagement = ({
       }
     });
   };
-  
+
   const handleViewQuizAttempt = (attempt: QuizAttempt) => {
     setViewingQuizAttempt(attempt);
     setGameState(GameState.QUIZ_HISTORY_DETAIL);

@@ -13,16 +13,14 @@ interface KeyboardShortcutProps {
   handleStartChat: () => void;
   handleNextQuestion: () => void;
   // Fix: Renamed props for clarity and to resolve App.tsx issues
-  closeExternalModal: () => void; 
-  isExternalModalOpen: boolean; 
+  closeExternalModal: () => void;
+  isExternalModalOpen: boolean;
   isEditing: () => boolean; // Function to check if an input field is focused
 }
 
 export const useKeyboardShortcuts = ({
   gameState,
   currentQuestion,
-  displayedQuestions,
-  currentQuestionIndex,
   handleAnswerSelect,
   toggleHint,
   handleStartChat,
@@ -51,7 +49,7 @@ export const useKeyboardShortcuts = ({
           return;
         }
       }
-      
+
       if (isEditing() || gameState === GameState.CHATTING_QUESTION) {
         return;
       }
@@ -86,13 +84,13 @@ export const useKeyboardShortcuts = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    gameState, 
-    currentQuestion, 
-    handleAnswerSelect, 
-    toggleHint, 
-    handleStartChat, 
-    handleNextQuestion, 
-    showShortcutGuide, 
+    gameState,
+    currentQuestion,
+    handleAnswerSelect,
+    toggleHint,
+    handleStartChat,
+    handleNextQuestion,
+    showShortcutGuide,
     // Fix: Use renamed props in dependency array
     closeExternalModal,
     isExternalModalOpen,
