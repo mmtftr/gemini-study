@@ -34,8 +34,7 @@ Try it out at [https://quiz.mmtf.dev](https://quiz.mmtf.dev)!
 ### 📚 Course Management
 - **Create Custom Courses**: Organize your learning materials into structured courses
 - **AI Course Generation**: Automatically generate comprehensive courses with web-sourced content
-- **Content Library**: Add text content, documents, and notes to build your knowledge base
-- **Smart Organization**: Edit, update, and manage your learning materials with ease
+- **Content Library**: Add, edit and manage text content to build your knowledge base
 
 ### 🧠 AI-Powered Quizzes
 - **Dynamic Quiz Generation**: Create quizzes from your course content or any topic
@@ -147,15 +146,7 @@ The deploy command automatically builds the project and deploys to Cloudflare Pa
 
 ## 🔧 Configuration
 
-### Environment Variables
-
-Create a `.env.local` file for local development:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-*Note: In production, API keys are entered through the UI and stored locally.*
+API keys are provided in the UI, and stored in `localStorage`. This app has no backend and directly communicates with the Gemini API.
 
 ### Available Scripts
 
