@@ -38,7 +38,7 @@ Try it out at [https://quiz.mmtf.dev](https://quiz.mmtf.dev)!
 
 ### 🧠 AI-Powered Quizzes
 - **Dynamic Quiz Generation**: Create quizzes from your course content or any topic
-- **Multiple AI Models**: Choose from Gemini 2.5 Flash, Pro, or 2.0 Flash for different quality/speed preferences
+- **Multiple AI Models**: Choose from Gemini 3 Flash or Pro for different quality/speed preferences
 - **Real-time Streaming**: Questions are generated and streamed live for immediate engagement
 - **Adaptive Difficulty**: Questions tailored to your content and learning level
 
@@ -116,7 +116,7 @@ The deploy command automatically builds the project and deploys to Cloudflare Pa
 
 ### Getting Started
 1. **API Key Setup**: Enter your Google Gemini API key on first launch
-2. **Choose Your Model**: Select from Gemini 2.5 Flash, Pro, or 2.0 Flash
+2. **Choose Your Model**: Select from Gemini 3 Flash or Pro
 3. **Create Your First Course**: Either generate one with AI or create manually
 
 ### Creating Content
@@ -160,7 +160,7 @@ API keys are provided in the UI, and stored in `localStorage`. This app has no b
 
 - **Complete Privacy**: Your data stays on your device
 - **Unlimited Learning**: Create quizzes on any topic imaginable
-- **Adaptive AI**: Three different Gemini models for various needs
+- **Adaptive AI**: Three different Gemini 3 models for various needs
 - **Rich Interactions**: Not just quizzes - engage in meaningful learning conversations
 - **Progress Tracking**: Detailed analytics to guide your learning journey
 - **Zero Setup**: No backend required - just add your API key and start learning

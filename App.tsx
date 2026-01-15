@@ -339,13 +339,13 @@ const App: React.FC = () => {
                 className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-slate-100"
               >
                 <option value={GeminiModel.FLASH}>
-                  Gemini 2.5 Flash (Faster, Good for most uses)
+                  Gemini 3 Flash (Faster, Good for most uses)
                 </option>
                 <option value={GeminiModel.PRO}>
-                  Gemini 2.5 Pro (Slightly Slower, Potentially Higher Quality)
+                  Gemini 3 Pro (Slightly Slower, Potentially Higher Quality)
                 </option>
                 <option value={GeminiModel.FLASH_2_0}>
-                  Gemini 2.0 Flash (Latest, with Google Search access)
+                  Gemini 3 Flash (Latest, with Google Search access)
                 </option>
               </select>
               <p className="text-xs text-slate-400 mt-1">
