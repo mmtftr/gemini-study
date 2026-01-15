@@ -79,8 +79,8 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({
               <option value={GeminiModel.PRO}>
                 Gemini 3 Pro (Slightly Slower, Potentially Higher Quality)
               </option>
-              <option value={GeminiModel.FLASH_2_0}>
-                Gemini 3 Flash (Latest, with Google Search access)
+              <option value={GeminiModel.PRO_2_5}>
+                Gemini 2.5 Pro (Stable, Production-ready)
               </option>
             </select>
             <p className="text-xs text-slate-400 mt-1">

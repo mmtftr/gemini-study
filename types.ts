@@ -38,7 +38,7 @@ export enum GameState {
 export enum GeminiModel {
   FLASH = "gemini-3-flash-preview",
   PRO = "gemini-3-pro-preview",
-  FLASH_2_0 = "gemini-3-flash-preview",
+  PRO_2_5 = "gemini-2.5-pro-preview-05-06",
 }
 
 // Database specific types
